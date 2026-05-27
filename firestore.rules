@@ -1,0 +1,89 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Global safety net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Helper functions
+    function isSignedIn() { return request.auth != null; }
+    function existing() { return resource.data; }
+    function incoming() { return request.resource.data; }
+    function isValidId(id) { return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$'); }
+    
+    // Admin check - Only needed for Admin Panel
+    function isAdmin() { 
+      return isSignedIn() && exists(/databases/$(database)/documents/users/$(request.auth.uid)) && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin'; 
+    }
+
+    // User Profile Validation
+    function isValidUserProfile(data, isCreate) {
+       return data.keys().hasAll(['email', 'createdAt']) &&
+              data.email is string && data.email.size() <= 200 &&
+              (isCreate ? data.createdAt == request.time : data.createdAt == existing().createdAt) &&
+              // Only admins can set role to admin, otherwise it must be user, except main owner
+              (!data.keys().hasAny(['role']) || data.role == 'user' || (isAdmin() && data.role == 'admin') || (request.auth.token.email == 'riyamost75@gmail.com' && data.role == 'admin'));
+    }
+
+    match /supportTickets/{ticketId} {
+      allow create: if isSignedIn() && incoming().userId == request.auth.uid;
+      allow read: if isSignedIn() && (resource.data.userId == request.auth.uid || isAdmin());
+      allow update: if isSignedIn() && isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    match /users/{userId} {
+      allow get: if isSignedIn() && (request.auth.uid == userId || isAdmin());
+      allow list: if isAdmin();
+      
+      allow create: if isSignedIn() && request.auth.uid == userId &&
+                    isValidUserProfile(incoming(), true);
+      
+      allow update: if isSignedIn() && (request.auth.uid == userId || isAdmin()) &&
+                    isValidUserProfile(incoming(), false) &&
+                    (isAdmin() || !incoming().diff(existing()).affectedKeys().hasAny(['role']));
+      
+      allow delete: if isAdmin();
+      
+      // Documents
+      match /documents/{documentId} {
+        allow get: if isSignedIn() && request.auth.uid == userId;
+        allow list: if isSignedIn() && request.auth.uid == userId;
+        allow create: if isSignedIn() && request.auth.uid == userId && isValidId(documentId) &&
+                      incoming().keys().hasAll(['id', 'category', 'summary', 'dateAdded']) &&
+                      incoming().id == documentId;
+        allow update: if isSignedIn() && request.auth.uid == userId && isValidId(documentId) &&
+                      incoming().id == existing().id &&
+                      incoming().dateAdded == existing().dateAdded; // immutable
+        allow delete: if isSignedIn() && request.auth.uid == userId;
+      }
+
+      // Reminders
+      match /reminders/{reminderId} {
+        allow get: if isSignedIn() && request.auth.uid == userId;
+        allow list: if isSignedIn() && request.auth.uid == userId;
+        allow create: if isSignedIn() && request.auth.uid == userId && isValidId(reminderId) &&
+                      incoming().keys().hasAll(['id', 'type']) &&
+                      incoming().id == reminderId;
+        allow update: if isSignedIn() && request.auth.uid == userId && isValidId(reminderId) &&
+                      incoming().id == existing().id;
+        allow delete: if isSignedIn() && request.auth.uid == userId;
+      }
+
+      // Found Items
+      match /foundItems/{itemId} {
+        allow get: if isSignedIn() && request.auth.uid == userId;
+        allow list: if isSignedIn() && request.auth.uid == userId;
+        allow create: if isSignedIn() && request.auth.uid == userId && isValidId(itemId) &&
+                      incoming().keys().hasAll(['id', 'itemName', 'location', 'dateAdded']) &&
+                      incoming().id == itemId;
+        allow update: if isSignedIn() && request.auth.uid == userId && isValidId(itemId) &&
+                      incoming().id == existing().id &&
+                      incoming().dateAdded == existing().dateAdded;
+        allow delete: if isSignedIn() && request.auth.uid == userId;
+      }
+    }
+  }
+}

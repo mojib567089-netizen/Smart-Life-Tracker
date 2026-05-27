@@ -1,0 +1,6 @@
+{
+  "name": "Smart Life Tracker",
+  "description": "An all-in-one life assistant app to manage documents, smart reminders, and organize personal items with an AI-powered lost and found.",
+  "requestFramePermissions": ["camera"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

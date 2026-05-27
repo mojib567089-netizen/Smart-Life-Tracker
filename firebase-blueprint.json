@@ -1,0 +1,73 @@
+{
+  "entities": {
+    "DocumentItem": {
+      "title": "DocumentItem",
+      "description": "Scanned documents and files",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "image": { "type": "string" },
+        "category": { "type": "string" },
+        "keywords": { "type": "array", "items": { "type": "string" } },
+        "summary": { "type": "string" },
+        "dateAdded": { "type": "string" }
+      },
+      "required": ["id", "image", "category", "summary", "dateAdded"]
+    },
+    "ReminderItem": {
+      "title": "ReminderItem",
+      "description": "Smart reminders for bills and medicine",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "medicineName": { "type": "string" },
+        "scheduleInfos": { "type": "array", "items": { "type": "string" } },
+        "dueDate": { "type": "string" },
+        "title": { "type": "string" },
+        "type": { "type": "string" }
+      },
+      "required": ["id", "type"]
+    },
+    "FoundItem": {
+      "title": "FoundItem",
+      "description": "Lost and found items logs",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "itemName": { "type": "string" },
+        "location": { "type": "string" },
+        "dateAdded": { "type": "string" }
+      },
+      "required": ["id", "itemName", "location", "dateAdded"]
+    },
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "User profile with admin role",
+      "type": "object",
+      "properties": {
+        "email": { "type": "string" },
+        "role": { "type": "string" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["email", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "UserProfile" },
+      "description": "User profile data and admin roles"
+    },
+    "/users/{userId}/documents/{documentId}": {
+      "schema": { "$ref": "DocumentItem" },
+      "description": "User documents"
+    },
+    "/users/{userId}/reminders/{reminderId}": {
+      "schema": { "$ref": "ReminderItem" },
+      "description": "User reminders"
+    },
+    "/users/{userId}/foundItems/{itemId}": {
+      "schema": { "$ref": "FoundItem" },
+      "description": "User found items logs"
+    }
+  }
+}
