@@ -60,20 +60,19 @@ export default function LoginScreen() {
       await signInWithGoogle();
       navigate('/');
     } catch (err: any) {
+      console.error(err);
       if (err.code === 'auth/popup-closed-by-user') {
         setError('Sign-in cancelled. Please try again.');
       } else if (err.code === 'auth/popup-blocked') {
         setError('Sign-in popup blocked. Please allow popups.');
+      } else if (err.code === 'auth/unauthorized-domain' || err.message?.includes('unauthorized-domain')) {
+        setError('unauthorized-domain-error');
       } else {
         setError('Google Sign-in failed. Error: ' + (err.message || err.code));
       }
     } finally {
       setLoading(false);
     }
-  };
-
-  const handleBiometricLogin = () => {
-    alert('Biometric Login hardware API is not active in this environment.');
   };
 
   const handleForgotPassword = async () => {
@@ -246,7 +245,7 @@ export default function LoginScreen() {
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-0 bottom-1 text-slate-555 hover:text-slate-300"
+                  className="absolute right-0 bottom-1 text-slate-500 hover:text-slate-300"
                 >
                   {showPassword ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
                 </button>
@@ -269,13 +268,30 @@ export default function LoginScreen() {
                   <div className="text-[11px] text-red-200 font-medium leading-normal">
                     {error === 'Email/Password provider is not enabled in Firebase project.' ? (
                       <span>ইমেইল ও পাসওয়ার্ড রেজিস্টার পদ্ধতিটি আপনার ফায়ারবেস কনসোলে বন্ধ করা আছে!</span>
+                    ) : error === 'unauthorized-domain-error' ? (
+                      <span className="font-semibold text-rose-300">Firebase Error: unauthorized-domain (অননুমোদিত ডোমেন)</span>
                     ) : (
                       <span>{error}</span>
                     )}
                   </div>
                 </div>
                 
-                {showFirebaseGuide && (
+                {error === 'unauthorized-domain-error' ? (
+                  <div className="pt-2 border-t border-red-900/30 text-[11px] text-slate-300 space-y-2 bg-red-955/20 p-2 rounded">
+                    <p className="font-bold text-amber-300">🚨 সমস্যাটির সমাধান করুন খুবই সহজে:</p>
+                    <p className="leading-normal">
+                      আপনি অ্যাপটি <span className="text-white font-bold bg-[#1a1c23] px-1 rounded font-mono">rtlifetracker.netlify.app</span>-এ হোস্ট করেছেন, তাই Firebase এটি থেকে Google Sign-in করার অনুমতি দিচ্ছে না যতক্ষণ না আপনি এই ডোমেনটি অনুমতি তালিকায় অনুমোদন করবেন।
+                    </p>
+                    <div className="space-y-1.5 font-normal">
+                      <p className="font-bold text-emerald-400">✅ সমাধানের ৩টি ধাপ:</p>
+                      <ol className="list-decimal list-inside space-y-1 pl-1 text-slate-300">
+                        <li>আপনার ব্রাউজারে <a href="https://console.firebase.google.com/" target="_blank" rel="noreferrer" className="text-sky-400 font-bold underline hover:text-sky-300 inline">Firebase Console</a>-এ যান।</li>
+                        <li><b>Authentication &gt; Settings &gt; Authorized domains</b> অপশনে যান।</li>
+                        <li><b>Add domain</b> বোতামে ক্লিক করে হুবহু <code className="text-yellow-300 px-1 bg-slate-900 rounded font-mono">rtlifetracker.netlify.app</code> লিখে যোগ (Add) করুন।</li>
+                      </ol>
+                    </div>
+                  </div>
+                ) : showFirebaseGuide && (
                   <div className="pt-2 border-t border-red-900/30 text-[11px] text-slate-300 space-y-1.5 bg-red-955/20 p-2 rounded">
                     <p className="font-bold text-amber-400">🛠️ দ্রুত সমাধানের ২টি সহজ উপায়:</p>
                     <div className="leading-relaxed space-y-1 font-normal">
